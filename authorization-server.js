@@ -98,13 +98,12 @@ app.post('/token', function (req, res) {
 	if (!req.headers.authorization) {
 		res.status(401).end();
 	} else {
-		const token = req.headers.authorization;
-		const client = decodeAuthCredentials(token);
+		const client = decodeAuthCredentials(req.headers.authorization);
 		if (!clients[client.clientId] || clients[client.clientId] !== client.clientSecret || !authorizationCodes[req.body.code]) {
 			res.status(401).end();
 		} else {
 			const obj = authorizationCodes[req.body.code];
-			var token = jwt.sign({ userName: obj.userName, scope: obj.clientReq.scope }, config.privateKey, { algorithm: 'RS256' });
+			const token = jwt.sign({ userName: obj.userName, scope: obj.clientReq.scope }, config.privateKey, { algorithm: 'RS256' });
 			res.status(200).send({ "access_token": token, "token_type": 'Bearer' });
 		}
 	}

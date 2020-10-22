@@ -53,6 +53,62 @@ app.use(bodyParser.urlencoded({ extended: true }))
 /*
 Your code here
 */
+app.get('/authorize', function (req, res) {
+	// const clientId = req.param('client_id');
+	let matchedClient;
+	const reqScopes = req.query.scope.split(" ");
+
+	for (let key in clients) {
+		if (req.param('client_id') === key) {
+			matchedClient = clients[key];
+			break;
+		}
+	}
+	if (!matchedClient || !containsAll(matchedClient.scopes, reqScopes)) {
+		res.status(401).end();
+	} else {
+		const reqId = randomString();
+		requests[reqId] = req.query;
+		res.render('login', { "client": matchedClient, "scope": req.query.scope, "requestId": reqId });
+		// res.status(200).end();
+	}
+})
+
+app.post('/approve', function (req, res) {
+	const requestId = req.body.requestId;
+	if (!users[req.body.userName] || (users[req.body.userName] !== req.body.password) || !requests[requestId]) {
+		res.status(401).end();
+	} else {
+		const clientReq = requests[requestId];
+		delete requests[requestId];
+		const key = randomString();
+		authorizationCodes[key] = { "clientReq": clientReq, "userName": req.body.userName }
+
+		const myURL = new URL(clientReq.redirect_uri);
+		myURL.searchParams.append('code', key);
+		myURL.searchParams.append('state', clientReq.state);
+
+
+		res.redirect(myURL.href);
+	}
+	// res.send('POST request to the homepage')
+})
+
+app.post('/token', function (req, res) {
+	if (!req.headers.authorization) {
+		res.status(401).end();
+	} else {
+		const token = req.headers.authorization;
+		const client = decodeAuthCredentials(token);
+		if (!clients[client.clientId] || clients[client.clientId] !== client.clientSecret || !authorizationCodes[req.body.code]) {
+			res.status(401).end();
+		} else {
+			const obj = authorizationCodes[req.body.code];
+			var token = jwt.sign({ userName: obj.userName, scope: obj.clientReq.scope }, config.privateKey, { algorithm: 'RS256' });
+			res.status(200).send({ "access_token": token, "token_type": 'Bearer' });
+		}
+	}
+})
 
 const server = app.listen(config.port, "localhost", function () {
 	var host = server.address().address

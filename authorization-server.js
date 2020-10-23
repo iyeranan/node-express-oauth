@@ -88,7 +88,6 @@ app.post('/approve', function (req, res) {
 		myURL.searchParams.append('code', key);
 		myURL.searchParams.append('state', clientReq.state);
 
-
 		res.redirect(myURL.href);
 	}
 	// res.send('POST request to the homepage')

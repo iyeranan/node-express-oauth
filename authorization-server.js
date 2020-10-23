@@ -56,7 +56,7 @@ Your code here
 app.get('/authorize', function (req, res) {
 	// const clientId = req.param('client_id');
 	let matchedClient;
-	const reqScopes = req.query.scope.split(" ");
+	// const reqScopes = req.query.scope.split(" ");
 
 	for (let key in clients) {
 		if (req.param('client_id') === key) {
@@ -64,7 +64,7 @@ app.get('/authorize', function (req, res) {
 			break;
 		}
 	}
-	if (!matchedClient || !containsAll(matchedClient.scopes, reqScopes)) {
+	if (!matchedClient || !req.query.scope || !containsAll(matchedClient.scopes, req.query.scope.split(" "))) {
 		res.status(401).end();
 	} else {
 		const reqId = randomString();
@@ -99,7 +99,7 @@ app.post('/token', function (req, res) {
 		res.status(401).end();
 	} else {
 		const client = decodeAuthCredentials(req.headers.authorization);
-		if (!clients[client.clientId] || clients[client.clientId] !== client.clientSecret || !authorizationCodes[req.body.code]) {
+		if (!clients[client.clientId] || (clients[client.clientId] !== client.clientSecret) || (!authorizationCodes[req.body.code])) {
 			res.status(401).end();
 		} else {
 			const obj = authorizationCodes[req.body.code];
